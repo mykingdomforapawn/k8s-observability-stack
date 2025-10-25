@@ -1,0 +1,18 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    # Maps ports from local machine (host) into the cluster's main node (container).
+    extraPortMappings:
+      # Maps localhost:8080 to the cluster's port 30080 (for application).
+      - containerPort: 30080
+        hostPort: 8080
+        protocol: TCP
+      # Maps localhost:9090 to the cluster's port 30090 (for Prometheus UI).
+      - containerPort: 30090
+        hostPort: 9090
+        protocol: TCP
+      # Maps localhost:3000 to the cluster's port 30000 (for Grafana UI).
+      - containerPort: 30000
+        hostPort: 3000
+        protocol: TCP

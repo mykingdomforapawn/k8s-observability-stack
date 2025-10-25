@@ -1,0 +1,7 @@
+---
+# Run Loki as a single binary (enough for local dev) to reduce setup complexity
+isMonolithicMode: true
+
+# Disable persistence
+persistence:
+  enabled: false

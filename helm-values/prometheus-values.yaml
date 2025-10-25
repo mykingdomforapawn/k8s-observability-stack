@@ -1,0 +1,42 @@
+---
+# --- Prometheus Operator Settings ---
+prometheusOperator:
+  enabled: true
+  admissionWebhooks:
+    enabled: false # Disable webhooks for simplicity on kind
+
+# --- Alertmanager Settings ---
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      emptyDir: {} # Use ephemeral storage
+
+# --- Prometheus Server Settings ---
+prometheus:
+  prometheusSpec:
+    storageSpec:
+      emptyDir: {} # Use ephemeral storage
+    # Expose Prometheus UI on NodePort 30090 (matching kind-config.yaml)
+    service:
+      type: NodePort
+      port: 9090
+      nodePort: 30090
+
+    # Disable rules that scrape components we're not using
+    thanosRuler:
+      enabled: false
+
+# --- Grafana Settings ---
+grafana:
+  # Disable persistence for local dev
+  persistence:
+    enabled: false
+  # Expose Grafana UI on NodePort 30000 (matching kind-config.yaml)
+  service:
+    type: NodePort
+    port: 3000
+    nodePort: 30000
+  # Set a default admin password
+  # HACK: Hardcoded password for local demo only.
+  # DO NOT DO THIS IN A REAL/PRODUCTION ENVIRONMENT.
+  adminPassword: "admin"

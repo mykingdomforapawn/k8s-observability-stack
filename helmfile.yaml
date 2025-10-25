@@ -1,0 +1,36 @@
+---
+# List the Helm chart repositories
+repositories:
+  - name: prometheus-community
+    url: https://prometheus-community.github.io/helm-charts
+  - name: grafana
+    url: https://grafana.github.io/helm-charts
+
+# List the software releases to install
+releases:
+  # Release 1: Prometheus + Grafana + Alertmanager
+  - name: kube-prometheus-stack
+    namespace: monitoring
+    chart: prometheus-community/kube-prometheus-stack
+    version: "61.3.1"
+    createNamespace: true
+    values:
+      - ./helm-values/prometheus-values.yaml
+
+  # Release 2: Loki (for logs)
+  - name: loki
+    namespace: logging
+    chart: grafana/loki
+    version: "6.7.4"
+    createNamespace: true
+    values:
+      - ./helm-values/loki-values.yaml
+
+  # Release 3: Tempo (for traces)
+  - name: tempo
+    namespace: tracing
+    chart: grafana/tempo
+    version: "1.10.1"
+    createNamespace: true
+    values:
+      - ./helm-values/tempo-values.yaml
