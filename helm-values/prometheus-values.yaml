@@ -1,42 +1,69 @@
 ---
 # --- Prometheus Operator Settings ---
+# The operator is the "brain" that manages Prometheus/Alertmanager CRDs.
 prometheusOperator:
+  # Must be enabled; it's the core of the stack.
   enabled: true
+  # This stops the pod from trying to mount the 'tls-secret' volume.
+  tls:
+    enabled: false
+  # Disables admission webhooks which can cause issues in local 'kind' clusters.
   admissionWebhooks:
-    enabled: false # Disable webhooks for simplicity on kind
+    enabled: false
+    patch:
+      enabled: false
+    certManager:
+      enabled: false
 
 # --- Alertmanager Settings ---
+# Configures the Alertmanager component, which handles alert notifications.
 alertmanager:
   alertmanagerSpec:
+    # Disables persistence; alerts/silences are lost on restart (ephemeral).
     storage:
-      emptyDir: {} # Use ephemeral storage
+      # Uses an 'emptyDir' volume (temporary pod storage).
+      emptyDir: {}
 
 # --- Prometheus Server Settings ---
+# Configures the main Prometheus server instance.
 prometheus:
   prometheusSpec:
+    # Disables persistence; all metrics data is lost on restart (ephemeral).
     storageSpec:
-      emptyDir: {} # Use ephemeral storage
-    # Expose Prometheus UI on NodePort 30090 (matching kind-config.yaml)
+      # Uses an 'emptyDir' volume.
+      emptyDir: {}
+
+    # Exposes the Prometheus UI on the host machine.
     service:
+      # Use 'NodePort' to make the service reachable from outside the cluster.
       type: NodePort
+      # Internal cluster port for the service.
       port: 9090
+      # The static port on the node, mapped to localhost:9090 in kind-config.yaml.
       nodePort: 30090
 
-    # Disable rules that scrape components we're not using
+    # Disables the 'thanosRuler' component, which we are not using in this demo.
     thanosRuler:
       enabled: false
 
 # --- Grafana Settings ---
+# Configures the Grafana instance for visualization.
 grafana:
-  # Disable persistence for local dev
+  # Disables persistence; dashboards/datasources are lost on restart.
+  # Note: The chart auto-provisions the Prometheus datasource.
   persistence:
     enabled: false
-  # Expose Grafana UI on NodePort 30000 (matching kind-config.yaml)
+
+  # Exposes the Grafana UI on the host machine.
   service:
+    # Use 'NodePort' to make the service reachable.
     type: NodePort
+    # Internal cluster port.
     port: 3000
+    # The static port on the node, mapped to localhost:3000 in kind-config.yaml.
     nodePort: 30000
-  # Set a default admin password
+
+  # Sets the default admin password for the Grafana UI.
   # HACK: Hardcoded password for local demo only.
   # DO NOT DO THIS IN A REAL/PRODUCTION ENVIRONMENT.
   adminPassword: "admin"

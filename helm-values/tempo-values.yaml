@@ -1,9 +1,31 @@
-# Run Loki as a single binary (enough for local dev) to reduce setup complexity
-isMonolithicMode: true
+---
+# --- Helm Chart Settings (Chart deployment logic) ---
 
-# Disable persistence
-persistence:
+# Deploys Tempo as a single "monolithic" process; simplest model for local testing.
+monolithic:
+  enabled: true
+  # Runs a single pod for the Tempo instance.
+  replicas: 1
+  persistence:
+    # Disables PersistentVolumeClaims (PVCs); data is lost on pod restart (ephemeral).
+    enabled: false
+
+# --- Tempo Application Config (Passed into the Tempo process) ---
+
+# Enables the 'search' feature, which is required for finding traces.
+search:
+  enabled: true
+
+# --- Explicitly Disable Other Components ---
+# Since we set monolithic.enabled=true, we must explicitly disable the
+# individual microservice components to pass the chart's validation logic.
+distributor:
   enabled: false
-
-# Enable trace search
-searchEnabled: true
+ingester:
+  enabled: false
+querier:
+  enabled: false
+queryFrontend:
+  enabled: false
+compactor:
+  enabled: false

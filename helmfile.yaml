@@ -1,36 +1,55 @@
 ---
-# List the Helm chart repositories
+# --- Helmfile Repositories ---
+# Defines the "warehouses" or "catalogs" where Helmfile can find the charts.
 repositories:
+  # Repository for the kube-prometheus-stack
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
+  # Repository for Grafana Labs charts (Loki, Tempo)
   - name: grafana
     url: https://grafana.github.io/helm-charts
 
-# List the software releases to install
+# --- Helmfile Releases ---
+# Defines the list of software (releases) to install or update in the cluster.
 releases:
-  # Release 1: Prometheus + Grafana + Alertmanager
+  # --- Release 1: kube-prometheus-stack (Metrics, Dashboards, Alerting) ---
   - name: kube-prometheus-stack
+    # Deploys this stack into its own dedicated 'monitoring' namespace.
     namespace: monitoring
+    # The name of the chart to use from the 'prometheus-community' repo.
     chart: prometheus-community/kube-prometheus-stack
+    # Pins the chart version for reproducible builds.
     version: "61.3.1"
+    # Automatically creates the 'monitoring' namespace if it doesn't exist.
     createNamespace: true
+    # Loads all configuration overrides from this local file.
     values:
       - ./helm-values/prometheus-values.yaml
 
-  # Release 2: Loki (for logs)
+  # --- Release 2: Loki (Logging) ---
   - name: loki
+    # Deploys Loki into its own 'logging' namespace.
     namespace: logging
+    # The name of the chart to use from the 'grafana' repo.
     chart: grafana/loki
+    # Pins the chart version for reproducible builds.
     version: "6.7.4"
+    # Automatically creates the 'logging' namespace.
     createNamespace: true
+    # Loads configuration from our well-commented Loki values file.
     values:
       - ./helm-values/loki-values.yaml
 
-  # Release 3: Tempo (for traces)
+  # --- Release 3: Tempo (Tracing) ---
   - name: tempo
+    # Deploys Tempo into its own 'tracing' namespace.
     namespace: tracing
+    # The name of the chart to use from the 'grafana' repo.
     chart: grafana/tempo
+    # Pins the chart version for reproducible builds.
     version: "1.10.1"
+    # Automatically creates the 'tracing' namespace.
     createNamespace: true
+    # Loads configuration from the Tempo values file.
     values:
       - ./helm-values/tempo-values.yaml
