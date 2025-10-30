@@ -89,6 +89,19 @@ Once `helmfile sync` is complete and the pods are running, you can access the se
 
 * **Prometheus**: [http://localhost:9090](http://localhost:9090)
 
+### Build and Load Application Images
+After the backends are running, you must build the custom service images and load them into the `kind` cluster.
+
+Run these commands from the root of the project to build and load the images into the cluster:
+
+```bash
+docker build -t api-gateway:latest ./services/api-gateway
+docker build -t user-service:latest ./services/user-service
+
+kind load docker-image api-gateway:latest --name observability
+kind load docker-image user-service:latest --name observability
+```
+
 ---
 
 ## How to Tear Down
@@ -120,7 +133,7 @@ This project is being built step-by-step.
     * Defined `extraPortMappings` to expose services.
 
 * [x] **Step 2: Deploy Backends**
-    * Used `helmfile` to create a declarative, reproducible install.
+    * Used `helmfile` to create a declarative, reproducible installation.
     * Deployed `kube-prometheus-stack` (Prometheus, Grafana).
     * Deployed `loki` for logging.
     * Deployed `tempo` for tracing.
@@ -128,7 +141,7 @@ This project is being built step-by-step.
 * [x] **Step 3: Repo Quality**
     * Added `pre-commit` hooks for YAML linting and secret scanning.
 
-* [ ] **Step 4: Build & Containerize App**
+* [x] **Step 4: Build & Containerize App**
     * Create two simple microservices (e.g., Python/Go).
     * Instrument them with the OpenTelemetry (OTel) SDK.
     * Create `Dockerfiles` and build local images.
