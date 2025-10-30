@@ -5,9 +5,13 @@ repositories:
   # Repository for the kube-prometheus-stack
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
-  # Repository for Grafana Labs charts (Loki, Tempo)
+  # - name: open-telemetry
+  #    url: https://open-telemetry.github.io/opentelemetry-helm-charts
   - name: grafana
     url: https://grafana.github.io/helm-charts
+  # Repository for the otel collector
+  - name: open-telemetry
+    url: https://open-telemetry.github.io/opentelemetry-helm-charts
 
 # --- Helmfile Releases ---
 # Defines the list of software (releases) to install or update in the cluster.
@@ -53,3 +57,14 @@ releases:
     # Loads configuration from the Tempo values file.
     values:
       - ./helm-values/tempo-values.yaml
+
+  # --- Release 4: OpenTelemetry Collector ---
+  - name: otel-collector
+    # Deploys collector into the 'default' namespace
+    namespace: default
+    chart: open-telemetry/opentelemetry-collector
+    # Pin the chart version
+    version: "0.100.0"
+    createNamespace: false
+    values:
+      - ./helm-values/otel-collector-values.yaml

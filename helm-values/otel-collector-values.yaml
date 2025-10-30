@@ -1,0 +1,91 @@
+# Specifies the OTel Collector container image.
+# Using 'contrib' to include extra exporters like Loki.
+image:
+  repository: otel/opentelemetry-collector-contrib
+  tag: 0.103.1
+
+# Sets the collector's deployment strategy to a standard Kubernetes 'Deployment'.
+mode: deployment
+
+# Defines the OTel Collector's pipeline configuration (receivers, processors, exporters).
+config:
+  receivers:
+    # Configures the OTLP receiver to accept telemetry over gRPC (4317) and HTTP (4318).
+    otlp:
+      protocols:
+        grpc: {}
+        http: {}
+
+  processors:
+    # Batches telemetry data before exporting for better efficiency.
+    batch: {}
+    # Prevents the collector from exceeding memory limits.
+    memory_limiter:
+      check_interval: 1s
+      limit_percentage: 75
+      spike_limit_percentage: 15
+    # 'k8sattributes' processor is defined and added by the 'kubernetesAttributes' preset below.
+    # It enriches telemetry with k8s metadata (pod name, namespace, etc.).
+
+  exporters:
+    # --- Metrics Exporter ---
+    # Pushes metrics to the Prometheus remote write endpoint.
+    prometheusremotewrite:
+      # K8s internal service DNS name for Prometheus.
+      endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
+      tls:
+        insecure: true # Disable TLS for internal cluster communication.
+
+    # --- Traces Exporter ---
+    # Pushes traces to the Tempo OTLP gRPC endpoint.
+    otlp/tempo:
+      # K8s internal service DNS name for Tempo.
+      endpoint: "http://tempo-monolithic.tracing.svc.cluster.local:4317"
+      tls:
+        insecure: true
+
+    # --- Logs Exporter ---
+    # Pushes logs to the Loki gateway endpoint.
+    #loki:
+      # K8s internal service DNS name for Loki.
+    #  endpoint: "http://loki-gateway.logging.svc.cluster.local:3100/loki/api/v1/push"
+
+    otlphttp/loki:
+      endpoint: "http://loki-gateway.logging.svc.cluster.local:3100/otlp/v1/logs"
+      tls:
+        insecure: true
+
+    # --- Debug Exporter ---
+    # Logs all received telemetry to the collector's console. Useful for debugging.
+    logging:
+      loglevel: debug
+
+  service:
+    # Defines the pipelines that connect receivers, processors, and exporters.
+    pipelines:
+      # --- Metrics Pipeline ---
+      metrics:
+        receivers: [otlp]
+        # 'k8sattributes' is added by the preset.
+        processors: [memory_limiter, k8sattributes, batch]
+        # Exports to both Prometheus and the console log for debugging.
+        exporters: [prometheusremotewrite, logging]
+
+      # --- Traces Pipeline ---
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlp/tempo, logging]
+
+      # --- Logs Pipeline ---
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlphttp/loki, logging]
+
+# Enables the 'kubernetesAttributes' preset.
+# This preset automatically adds the 'k8sattributes' processor
+# to the pipelines and configures the necessary RBAC permissions.
+presets:
+  kubernetesAttributes:
+    enabled: true
