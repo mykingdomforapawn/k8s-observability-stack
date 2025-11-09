@@ -5,20 +5,32 @@ import logging
 from fastapi import FastAPI
 
 # --- OpenTelemetry (OTel) Imports ---
-from opentelemetry import trace
+from opentelemetry import trace, metrics
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 
 # Auto-instrumentation libraries
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 
 # --- Globals ---
-# Set up a logger and a tracer for this service
 logger = logging.getLogger(__name__)
+
+# OTel Tracing Globals
 tracer = trace.get_tracer(__name__)
+
+# OTel Metrics Globals
+meter = metrics.get_meter(__name__)
+user_requests_counter = meter.create_counter(
+    name="api.user.requests",
+    unit="1",
+    description="Counts the number of requests to the /user endpoint"
+)
 
 # --- OTel Setup Function ---
 def setup_opentelemetry(fastapi_app: FastAPI):
@@ -26,36 +38,38 @@ def setup_opentelemetry(fastapi_app: FastAPI):
     Configures OpenTelemetry instrumentation for the app.
     """
 
-    # 1. Define a "Resource" for this service
+    # Define a "Resource" for this service (applies to BOTH traces and metrics)
     resource = Resource(attributes={
         "service.name": "api-gateway"
     })
 
-    # 2. Configure the OTLP Exporter
-    otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-    otlp_exporter = OTLPSpanExporter(
-        endpoint=otlp_endpoint,
-        insecure=True  # Use insecure (http) for local dev
-    )
+    # Get the OTel Collector endpoint from environment variables
+    # This must be the gRPC endpoint (no http://)
+    otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4317")
 
-    # 3. Set up the TracerProvider
+    # --- 1. Set up TRACES ---
+    trace_exporter = OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True)
     tracer_provider = TracerProvider(resource=resource)
-    span_processor = BatchSpanProcessor(otlp_exporter)
-    tracer_provider.add_span_processor(span_processor)
+    tracer_provider.add_span_processor(BatchSpanProcessor(trace_exporter))
     trace.set_tracer_provider(tracer_provider)
 
+    # --- 2. Set up METRICS ---
+    metric_exporter = OTLPMetricExporter(endpoint=otlp_endpoint, insecure=True)
+    metric_reader = PeriodicExportingMetricReader(metric_exporter)
+    meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+    metrics.set_meter_provider(meter_provider)
+
     # 4. Apply auto-instrumentation
-    FastAPIInstrumentor.instrument_app(fastapi_app, tracer_provider=tracer_provider) # FIX 1
+    FastAPIInstrumentor.instrument_app(fastapi_app)
     HTTPXClientInstrumentor().instrument()
 
-    logger.info(f"OpenTelemetry setup complete. Sending to: {otlp_endpoint}")
+    logger.info(f"OpenTelemetry (Traces & Metrics) setup complete. Sending to: {otlp_endpoint}")
 
 # --- FastAPI App Creation ---
 app = FastAPI()
 
 # --- OTel Setup ---
 setup_opentelemetry(app)
-
 
 # --- API Endpoints ---
 @app.get("/user/{user_id}")
@@ -64,16 +78,14 @@ async def get_user(user_id: str):
     Main endpoint. It calls the user-service to get data.
     """
 
-    # The 'tracer' object is created from the global OTel setup
+    # Add an attribute (label) for the user_id
+    user_requests_counter.add(1, {"user.id.path": user_id})
+
     # Manually create a new "span" for this specific operation
     with tracer.start_as_current_span("get_user_handler") as span:
+        logger.info(f"Request received for user_id: {user_id}")
+        span.set_attribute("user.id", user_id)
 
-        logger.info(f"Request received for user_id: {user_id}") # FIX 2
-
-        # Add attributes to the span for better debugging
-        span.set_attribute("user.id", user_id) # FIX 2
-
-        # Call the user-service and create a "child span" under "get_user_handler" span
         try:
             user_service_url = os.getenv("USER_SERVICE_URL", "http://localhost:8001")
 

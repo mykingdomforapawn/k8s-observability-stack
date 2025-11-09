@@ -32,6 +32,8 @@ prometheus:
     storageSpec:
       # Uses an 'emptyDir' volume.
       emptyDir: {}
+    # This is allowing teh server to accept 'push' based metrics from the OTel Collector.
+    enableRemoteWriteReceiver: true
 
     # Exposes the Prometheus UI on the host machine.
     service:
