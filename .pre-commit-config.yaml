@@ -4,6 +4,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-yaml
+        exclude: ^app-chart/templates/
       - id: end-of-file-fixer
       - id: trailing-whitespace
 
@@ -12,6 +13,7 @@ repos:
     hooks:
       - id: yamllint
         args: ['-c', '.yamllint.yaml']
+        exclude: ^app-chart/templates/
 
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.18.4

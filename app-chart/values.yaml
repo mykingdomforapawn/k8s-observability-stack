@@ -1,0 +1,24 @@
+---
+# -- Default settings for a service --
+
+# The name of the deployment (e.g., "api-gateway")
+appName: "my-app"
+
+# The Docker image to use
+image:
+  repository: "my-image"
+  tag: "latest"
+  # This is critical for 'kind'.
+  # It tells K8s to use the local image, not pull from Docker Hub.
+  pullPolicy: Never
+
+# The port the container is listening on
+containerPort: 8000
+
+# The service to create
+service:
+  type: ClusterIP
+  port: 80
+
+# Environment variables to inject into the pod
+env: []

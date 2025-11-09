@@ -1,0 +1,23 @@
+---
+appName: "api-gateway"
+
+image:
+  repository: "api-gateway"
+  tag: "latest"
+  pullPolicy: Never  # 'Never' forces Kubernetes to use the local image loaded into 'kind'
+
+# Container port (matches the Dockerfile)
+containerPort: 8000
+
+service:
+  type: ClusterIP
+  port: 80  # The port the *service* will expose internally
+
+# Environment variables for the api-gateway pod
+env:
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    # The internal K8s DNS name for the collector service
+    value: "otel-collector-opentelemetry-collector.default.svc.cluster.local:4317"
+  - name: USER_SERVICE_URL
+    # The internal K8s DNS name for the user-service
+    value: "http://user-service.default.svc.cluster.local:80"

@@ -1,3 +1,4 @@
+---
 # Specifies the OTel Collector container image.
 # Using 'contrib' to include extra exporters like Loki.
 image:
@@ -24,8 +25,6 @@ config:
       check_interval: 1s
       limit_percentage: 75
       spike_limit_percentage: 15
-    # 'k8sattributes' processor is defined and added by the 'kubernetesAttributes' preset below.
-    # It enriches telemetry with k8s metadata (pod name, namespace, etc.).
 
   exporters:
     # --- Metrics Exporter ---
@@ -34,22 +33,18 @@ config:
       # K8s internal service DNS name for Prometheus.
       endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write"
       tls:
-        insecure: true # Disable TLS for internal cluster communication.
+        insecure: true  # Disable TLS for internal cluster communication.
 
     # --- Traces Exporter ---
     # Pushes traces to the Tempo OTLP gRPC endpoint.
     otlp/tempo:
       # K8s internal service DNS name for Tempo.
-      endpoint: "http://tempo-monolithic.tracing.svc.cluster.local:4317"
+      endpoint: "tempo.tracing.svc.cluster.local:4317"
       tls:
         insecure: true
 
     # --- Logs Exporter ---
     # Pushes logs to the Loki gateway endpoint.
-    #loki:
-      # K8s internal service DNS name for Loki.
-    #  endpoint: "http://loki-gateway.logging.svc.cluster.local:3100/loki/api/v1/push"
-
     otlphttp/loki:
       endpoint: "http://loki-gateway.logging.svc.cluster.local:3100/otlp/v1/logs"
       tls:

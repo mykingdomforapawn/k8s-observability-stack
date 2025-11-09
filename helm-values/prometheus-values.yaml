@@ -67,3 +67,21 @@ grafana:
   # HACK: Hardcoded password for local demo only.
   # DO NOT DO THIS IN A REAL/PRODUCTION ENVIRONMENT.
   adminPassword: "admin"
+
+  # This declaratively creates Grafana data sources at startup.
+  additionalDataSources:
+    # --- LOKI DATA SOURCE ---
+    - name: Loki
+      type: loki
+      # K8s internal DNS name for the Loki service
+      url: http://loki-gateway.logging.svc.cluster.local:3100
+      access: proxy  # 'proxy' means Grafana's server queries the source
+      isDefault: false
+
+    # --- TEMPO DATA SOURCE ---
+    - name: Tempo
+      type: tempo
+      # K8s internal DNS name for the Tempo service
+      url: http://tempo.tracing.svc.cluster.local:3100
+      access: proxy
+      isDefault: false

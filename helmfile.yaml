@@ -68,3 +68,17 @@ releases:
     createNamespace: false
     values:
       - ./helm-values/otel-collector-values.yaml
+
+  # --- Release 5: API Gateway App ---
+  - name: api-gateway
+    namespace: default
+    chart: ./app-chart
+    values:
+      - ./helm-values/api-gateway-values.yaml
+
+  # --- Release 6: User Service App ---
+  - name: user-service
+    namespace: default
+    chart: ./app-chart
+    values:
+      - ./helm-values/user-service-values.yaml

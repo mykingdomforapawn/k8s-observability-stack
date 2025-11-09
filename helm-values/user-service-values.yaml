@@ -1,0 +1,19 @@
+---
+appName: "user-service"
+
+image:
+  repository: "user-service"
+  tag: "latest"
+  pullPolicy: Never
+
+# Container port (matches the Dockerfile)
+containerPort: 8001
+
+service:
+  type: ClusterIP
+  port: 80
+
+# Environment variables for the user-service pod
+env:
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "otel-collector-opentelemetry-collector.default.svc.cluster.local:4317"
