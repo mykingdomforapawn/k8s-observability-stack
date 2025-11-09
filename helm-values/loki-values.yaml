@@ -1,47 +1,42 @@
 ---
 # --- Helm Chart Settings (Chart deployment logic) ---
 
-# Deploys Loki as a single "monolithic" process instead of a microservices cluster.
+# Deploys Loki as a single process instead of a microservices cluster.
 deploymentMode: SingleBinary
+
+# Disables the NGINX gateway (not needed for 'SingleBinary' mode).
+gateway:
+  enabled: false
 
 # Configures the 'SingleBinary' deployment pod.
 singleBinary:
   # Runs a single pod instance.
   replicas: 1
+  # Disables PersistentVolumeClaims for ephemeral, local-only storage.
   persistence:
-    # Disables PersistentVolumeClaims (PVCs) for ephemeral, local-only storage.
     enabled: false
 
-  # --- Pod Security Context (Production Best Practice) ---
   # Runs the pod as a specific non-root user (10001) and group (10001).
-  # 'fsGroup' ensures that mounted volumes are owned by this group,
-  # making them writable by the Loki process.
   podSecurityContext:
     fsGroup: 10001
     runAsUser: 10001
     runAsGroup: 10001
 
-  # --- LOCAL CLUSTER FIX (Workaround for 'kind') ---
-  # HACK: Manually defines temporary 'emptyDir' volumes.
-  # WHY: The chart in this mode assumes a writable /data path exists,
-  # but does not create one. This is a workaround to fix the
-  # "mkdir: read-only file system" error in local clusters like 'kind'.
-  # This is not a standard production configuration.
+  # Defines temporary 'emptyDir' volumes.
   extraVolumes:
     - name: data
       emptyDir: {}
     - name: varloki
       emptyDir: {}
 
-  # Mounts the 'emptyDir' volumes to the paths Loki expects.
+  # Mounts the writable volumes to fix "read-only file system" errors in 'kind'.
   extraVolumeMounts:
     - name: data
       mountPath: /data
     - name: varloki
       mountPath: /var/loki
 
-# Explicitly disable scalable components (read/write/backend)
-# to pass the chart's validation when in SingleBinary mode.
+# Disables other deployment modes (read/write/backend) to validate 'SingleBinary' mode.
 write:
   replicas: 0
 read:
@@ -51,30 +46,37 @@ backend:
 
 # --- Loki Application Config (Passed into the Loki process) ---
 loki:
+  # Overrides the default HA replication (3) to 1 for a single node.
+  commonConfig:
+    replication_factor: 1
+
+  # Uses an in-memory ring for service discovery (required for single node).
+  distributor:
+    ring:
+      kvstore:
+        store: inmemory
+
   # Uses a simple, built-in index schema for local testing.
   useTestSchema: true
 
-  # Disables multi-tenancy and authentication for simplified local access.
+  # Disables multi-tenancy and authentication for simple access.
   auth_enabled: false
 
-  # Configures Loki to store all data on the pod's local filesystem.
+  # Configures Loki to store log chunks on the local filesystem.
   storage:
     type: filesystem
     filesystem:
-      # Configures Loki to use paths within the writable /data volume.
       chunks_directory: /data/loki/chunks
-      rules_directory: /data/loki/rules
 
-  # Configures the "ruler" component (for alerting/recording rules).
+  # Configures the "ruler" (for alerts) to also use the local filesystem.
   rulerConfig:
     storage:
-      # Tells the ruler to also use the local filesystem.
       type: local
       local:
-        # Configures the ruler to use the writable /var/loki volume.
         directory: /var/loki/rules-ruler
 
 # --- Disable Optional Caching ---
+# Disables optional caches to reduce memory usage in the 'kind' cluster.
 chunksCache:
   enabled: false
 resultsCache:

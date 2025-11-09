@@ -1,19 +1,28 @@
 ---
+# Sets the application name for Kubernetes resources.
 appName: "user-service"
 
+# Configures the container image.
 image:
+  # The name of the Docker image loaded into 'kind'.
   repository: "user-service"
+  # The tag of the Docker image.
   tag: "latest"
+  # 'Never' ensures the local image is used instead of pulling from a remote registry.
   pullPolicy: Never
 
-# Container port (matches the Dockerfile)
+# The port the application listens on inside the container.
 containerPort: 8001
 
+# Configures the internal Kubernetes Service.
 service:
+  # 'ClusterIP' makes the service only reachable inside the cluster.
   type: ClusterIP
+  # The port the Service exposes internally (e.g., http://user-service:80).
   port: 80
 
-# Environment variables for the user-service pod
+# Environment variables to inject into the user-service pod.
 env:
+  # The internal K8s address for the OTel Collector's gRPC endpoint.
   - name: OTEL_EXPORTER_OTLP_ENDPOINT
     value: "otel-collector-opentelemetry-collector.default.svc.cluster.local:4317"

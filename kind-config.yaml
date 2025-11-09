@@ -1,19 +1,21 @@
 ---
+# Defines the configuration for the 'kind' (Kubernetes in Docker) cluster.
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
+  # Configures the cluster's main control-plane node.
   - role: control-plane
-    # Maps ports from local machine (host) into the cluster's main node (container).
+    # Forwards local machine (host) ports to the cluster's internal node.
     extraPortMappings:
-      # Maps localhost:8080 to the cluster's port 30080 (for application).
+      # Exposes the application service on http://localhost:8080.
       - containerPort: 30080
         hostPort: 8080
         protocol: TCP
-      # Maps localhost:9090 to the cluster's port 30090 (for Prometheus UI).
+      # Exposes the Prometheus UI on http://localhost:9090.
       - containerPort: 30090
         hostPort: 9090
         protocol: TCP
-      # Maps localhost:3000 to the cluster's port 30000 (for Grafana UI).
+      # Exposes the Grafana UI on http://localhost:3000.
       - containerPort: 30000
         hostPort: 3000
         protocol: TCP

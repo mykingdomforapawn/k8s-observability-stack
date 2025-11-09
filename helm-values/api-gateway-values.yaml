@@ -1,23 +1,31 @@
 ---
+# Sets the 'appName' used in the chart's templates to 'api-gateway'.
 appName: "api-gateway"
 
+# Configures the container image to use.
 image:
+  # The name of the Docker image loaded into 'kind'.
   repository: "api-gateway"
+  # The tag of the Docker image.
   tag: "latest"
-  pullPolicy: Never  # 'Never' forces Kubernetes to use the local image loaded into 'kind'
+  # 'Never' forces Kubernetes to use the local image instead of pulling.
+  pullPolicy: Never
 
-# Container port (matches the Dockerfile)
+# The port the container listens on, matching its Dockerfile.
 containerPort: 8000
 
+# Configures the internal Kubernetes Service.
 service:
+  # 'ClusterIP' makes the service only reachable inside the cluster.
   type: ClusterIP
-  port: 80  # The port the *service* will expose internally
+  # The port for the Service itself (e.g., http://api-gateway:80).
+  port: 80
 
-# Environment variables for the api-gateway pod
+# Environment variables to inject into the api-gateway pod.
 env:
+  # The internal K8s address for the OTel Collector's gRPC port.
   - name: OTEL_EXPORTER_OTLP_ENDPOINT
-    # The internal K8s DNS name for the collector service
     value: "otel-collector-opentelemetry-collector.default.svc.cluster.local:4317"
+  # The internal K8s address for the user-service.
   - name: USER_SERVICE_URL
-    # The internal K8s DNS name for the user-service
     value: "http://user-service.default.svc.cluster.local:80"

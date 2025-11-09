@@ -1,21 +1,33 @@
 ---
+# Defines the list of repositories containing pre-commit hooks.
 repos:
+  # Repository for basic file checks (whitespace, file endings, etc.).
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v4.6.0 # Pins the hook version to v4.6.0.
     hooks:
+      # Checks YAML files for syntax errors.
       - id: check-yaml
+        # Excludes Helm chart templates, which are not valid YAML.
         exclude: ^app-chart/templates/
+      # Ensures files end with a single newline.
       - id: end-of-file-fixer
+      # Removes any trailing whitespace from lines.
       - id: trailing-whitespace
 
+  # Repository for advanced YAML linting (style, indentation, etc.).
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.35.1 # Pins the hook version to v1.35.1.
     hooks:
+      # Runs the 'yamllint' linter.
       - id: yamllint
+        # Passes the custom configuration file to the linter.
         args: ['-c', '.yamllint.yaml']
+        # Excludes Helm chart templates from style linting.
         exclude: ^app-chart/templates/
 
+  # Repository for detecting hardcoded secrets (API keys, passwords).
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.4
+    rev: v8.18.4 # Pins the hook version to v8.18.4.
     hooks:
+      # Runs the 'gitleaks' scanner to find potential secrets.
       - id: gitleaks

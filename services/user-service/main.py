@@ -9,21 +9,31 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.resources import Resource
+
+# Metrics Imports
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+
+# Logging Imports (using protected members for beta API)
+# noinspection PyProtectedMember
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+# noinspection PyProtectedMember
+from opentelemetry._logs import set_logger_provider
+# noinspection PyProtectedMember
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+# noinspection PyProtectedMember
+from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
 # Auto-instrumentation libraries
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 # --- Globals ---
 logger = logging.getLogger(__name__)
-
-# OTel Tracing Globals
 tracer = trace.get_tracer(__name__)
-
-# OTel Metrics Globals
 meter = metrics.get_meter(__name__)
+
 db_lookup_counter = meter.create_counter(
     name="db.user.lookups",
     unit="1",
@@ -37,12 +47,11 @@ FAKE_DB = {
 }
 
 # --- OTel Setup Function ---
-def setup_opentelemetry(fastapi_app: FastAPI):
+def setup_opentelemetry(app_to_instrument: FastAPI):
     """
     Configures OpenTelemetry instrumentation for the app.
     """
 
-    # Define a "Resource" for this service
     resource = Resource(attributes={
         "service.name": "user-service"
     })
@@ -61,10 +70,30 @@ def setup_opentelemetry(fastapi_app: FastAPI):
     meter_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
     metrics.set_meter_provider(meter_provider)
 
-    # 3. Apply auto-instrumentation
-    FastAPIInstrumentor.instrument_app(fastapi_app)
+    # --- 3. Set up LOGS ---
+    log_exporter = OTLPLogExporter(endpoint=otlp_endpoint, insecure=True)
+    logger_provider = LoggerProvider(resource=resource)
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
 
-    logger.info(f"OpenTelemetry (Traces & Metrics) setup complete. Sending to: {otlp_endpoint}")
+    set_logger_provider(logger_provider)
+
+    handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+    logging.getLogger().addHandler(handler)
+
+    LoggingInstrumentor().instrument(
+        set_logging_format=True,
+        tracer_provider=tracer_provider,
+        log_level=logging.INFO
+    )
+
+    # --- 4. Apply auto-instrumentation ---
+    FastAPIInstrumentor.instrument_app(
+        app_to_instrument,
+        tracer_provider=tracer_provider,
+        meter_provider=meter_provider
+    )
+
+    logger.info(f"OpenTelemetry (Traces, Metrics, & Logs) setup complete. Sending to: {otlp_endpoint}")
 
 # --- FastAPI App Creation ---
 app = FastAPI()
@@ -78,9 +107,6 @@ async def get_user_internal(user_id: str):
     """
     Internal endpoint to retrieve user data.
     """
-    # The auto-instrumentation will automatically create a "parent" span
-    # from the incoming request (which has the trace context from the api-gateway).
-    # This manual span will be a "child" of that.
     with tracer.start_as_current_span("find_user_in_db") as span:
 
         logger.info(f"Looking up user_id: {user_id}")
@@ -89,17 +115,13 @@ async def get_user_internal(user_id: str):
         user = FAKE_DB.get(user_id)
 
         if not user:
-            # Add 1 to our counter, with an attribute for "found=false"
             db_lookup_counter.add(1, {"user.found": "false"})
-
             logger.warning(f"User not found: {user_id}")
             span.set_attribute("error", True)
             span.set_attribute("user.found", False)
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Add 1 to our counter, with an attribute for "found=true"
         db_lookup_counter.add(1, {"user.found": "true"})
-
         logger.info(f"User found: {user['username']}")
         span.set_attribute("user.found", True)
         span.set_attribute("user.username", user['username'])

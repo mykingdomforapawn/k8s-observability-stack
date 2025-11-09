@@ -1,24 +1,25 @@
 ---
-# -- Default settings for a service --
-
-# The name of the deployment (e.g., "api-gateway")
+# The application name, used for naming Kubernetes resources (Deployments, Services, etc.).
 appName: "my-app"
 
-# The Docker image to use
+# Configuration for the container image.
 image:
+  # The name of the Docker image to use (e.g., "api-gateway").
   repository: "my-image"
+  # The tag of the Docker image (e.g., "latest").
   tag: "latest"
-  # This is critical for 'kind'.
-  # It tells K8s to use the local image, not pull from Docker Hub.
+  # 'Never' forces Kubernetes to use the local image (from 'kind load') instead of pulling from a registry.
   pullPolicy: Never
 
-# The port the container is listening on
+# The port that the application listens on inside the container.
 containerPort: 8000
 
-# The service to create
+# Configuration for the Kubernetes Service.
 service:
+  # The type of service (e.g., 'ClusterIP' for internal-only).
   type: ClusterIP
+  # The port the Service will expose inside the cluster.
   port: 80
 
-# Environment variables to inject into the pod
+# A list of environment variables to inject into the container (e.g., [{name: "MY_VAR", value: "my-value"}]).
 env: []

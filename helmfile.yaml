@@ -1,84 +1,92 @@
 ---
-# --- Helmfile Repositories ---
-# Defines the "warehouses" or "catalogs" where Helmfile can find the charts.
+# --- Helm Repositories ---
+# Defines the remote chart repositories (catalogs) Helmfile will use.
 repositories:
-  # Repository for the kube-prometheus-stack
+  # Repository for the kube-prometheus-stack (Prometheus, Grafana, Alertmanager).
   - name: prometheus-community
     url: https://prometheus-community.github.io/helm-charts
-  # - name: open-telemetry
-  #    url: https://open-telemetry.github.io/opentelemetry-helm-charts
+  # Repository for Grafana Labs charts (Loki, Tempo).
   - name: grafana
     url: https://grafana.github.io/helm-charts
-  # Repository for the otel collector
+  # Repository for the OpenTelemetry Collector chart.
   - name: open-telemetry
     url: https://open-telemetry.github.io/opentelemetry-helm-charts
 
-# --- Helmfile Releases ---
-# Defines the list of software (releases) to install or update in the cluster.
+# --- Helm Releases ---
+# Defines the full list of software to deploy into the cluster.
 releases:
   # --- Release 1: kube-prometheus-stack (Metrics, Dashboards, Alerting) ---
   - name: kube-prometheus-stack
-    # Deploys this stack into its own dedicated 'monitoring' namespace.
+    # Deploys this stack into the 'monitoring' namespace.
     namespace: monitoring
-    # The name of the chart to use from the 'prometheus-community' repo.
+    # Specifies the chart to use from the 'prometheus-community' repo.
     chart: prometheus-community/kube-prometheus-stack
     # Pins the chart version for reproducible builds.
     version: "61.3.1"
     # Automatically creates the 'monitoring' namespace if it doesn't exist.
     createNamespace: true
-    # Loads all configuration overrides from this local file.
+    # Loads configuration overrides from a local values file.
     values:
       - ./helm-values/prometheus-values.yaml
 
   # --- Release 2: Loki (Logging) ---
   - name: loki
-    # Deploys Loki into its own 'logging' namespace.
+    # Deploys Loki into the 'logging' namespace.
     namespace: logging
-    # The name of the chart to use from the 'grafana' repo.
+    # Specifies the chart to use from the 'grafana' repo.
     chart: grafana/loki
-    # Pins the chart version for reproducible builds.
+    # Pins the chart version.
     version: "6.7.4"
     # Automatically creates the 'logging' namespace.
     createNamespace: true
-    # Loads configuration from our well-commented Loki values file.
+    # Loads Loki-specific configuration overrides.
     values:
       - ./helm-values/loki-values.yaml
 
   # --- Release 3: Tempo (Tracing) ---
   - name: tempo
-    # Deploys Tempo into its own 'tracing' namespace.
+    # Deploys Tempo into the 'tracing' namespace.
     namespace: tracing
-    # The name of the chart to use from the 'grafana' repo.
+    # Specifies the chart to use from the 'grafana' repo.
     chart: grafana/tempo
-    # Pins the chart version for reproducible builds.
+    # Pins the chart version.
     version: "1.10.1"
     # Automatically creates the 'tracing' namespace.
     createNamespace: true
-    # Loads configuration from the Tempo values file.
+    # Loads Tempo-specific configuration overrides.
     values:
       - ./helm-values/tempo-values.yaml
 
   # --- Release 4: OpenTelemetry Collector ---
   - name: otel-collector
-    # Deploys collector into the 'default' namespace
+    # Deploys the collector into the 'default' namespace.
     namespace: default
+    # Specifies the chart to use from the 'open-telemetry' repo.
     chart: open-telemetry/opentelemetry-collector
-    # Pin the chart version
+    # Pins the chart version.
     version: "0.100.0"
+    # Does not create the 'default' namespace (it already exists).
     createNamespace: false
+    # Loads the collector's pipeline configuration.
     values:
       - ./helm-values/otel-collector-values.yaml
 
   # --- Release 5: API Gateway App ---
   - name: api-gateway
+    # Deploys the application into the 'default' namespace.
     namespace: default
+    # Specifies the path to the local chart in the repository.
     chart: ./app-chart
+    # Loads the values specific to the api-gateway (image, env vars, etc.).
     values:
       - ./helm-values/api-gateway-values.yaml
 
   # --- Release 6: User Service App ---
   - name: user-service
+    # Deploys the application into the 'default' namespace.
     namespace: default
+    # Uses the same local chart as the api-gateway.
     chart: ./app-chart
+    # Loads the values specific to the user-service.
     values:
       - ./helm-values/user-service-values.yaml

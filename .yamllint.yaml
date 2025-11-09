@@ -1,5 +1,10 @@
 ---
+# Inherits all default linting rules from yamllint.
 extends: default
+
+# Defines custom rule overrides.
 rules:
+  # Sets the maximum allowed line length to 120 characters.
   line-length: {max: 120}
+  # Enforces a strict 2-space indentation.
   indentation: {spaces: 2}

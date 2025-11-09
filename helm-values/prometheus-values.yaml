@@ -1,13 +1,12 @@
 ---
 # --- Prometheus Operator Settings ---
-# The operator is the "brain" that manages Prometheus/Alertmanager CRDs.
 prometheusOperator:
-  # Must be enabled; it's the core of the stack.
+  # Enables the operator, which manages Prometheus and Alertmanager configurations.
   enabled: true
-  # This stops the pod from trying to mount the 'tls-secret' volume.
+  # Disables internal TLS for simpler local setup.
   tls:
     enabled: false
-  # Disables admission webhooks which can cause issues in local 'kind' clusters.
+  # Disables webhooks, fixing errors in local 'kind' environments.
   admissionWebhooks:
     enabled: false
     patch:
@@ -16,74 +15,64 @@ prometheusOperator:
       enabled: false
 
 # --- Alertmanager Settings ---
-# Configures the Alertmanager component, which handles alert notifications.
 alertmanager:
   alertmanagerSpec:
-    # Disables persistence; alerts/silences are lost on restart (ephemeral).
+    # Uses temporary storage, as data will be ephemeral for local development.
     storage:
-      # Uses an 'emptyDir' volume (temporary pod storage).
       emptyDir: {}
 
 # --- Prometheus Server Settings ---
-# Configures the main Prometheus server instance.
 prometheus:
   prometheusSpec:
-    # Disables persistence; all metrics data is lost on restart (ephemeral).
+    # Uses temporary storage for all metric data.
     storageSpec:
-      # Uses an 'emptyDir' volume.
       emptyDir: {}
-    # This is allowing teh server to accept 'push' based metrics from the OTel Collector.
+    # Enables the receiver for Remote Write, allowing the OTel Collector to push metrics.
     enableRemoteWriteReceiver: true
 
-    # Exposes the Prometheus UI on the host machine.
+    # Exposes the Prometheus UI service.
     service:
-      # Use 'NodePort' to make the service reachable from outside the cluster.
+      # Makes the service reachable via NodePort mapping in kind-config.yaml.
       type: NodePort
-      # Internal cluster port for the service.
+      # Internal cluster port.
       port: 9090
-      # The static port on the node, mapped to localhost:9090 in kind-config.yaml.
+      # Static port on the node exposed to the host machine.
       nodePort: 30090
 
-    # Disables the 'thanosRuler' component, which we are not using in this demo.
+    # Disables the optional component for long-term storage/querying.
     thanosRuler:
       enabled: false
 
 # --- Grafana Settings ---
-# Configures the Grafana instance for visualization.
 grafana:
-  # Disables persistence; dashboards/datasources are lost on restart.
-  # Note: The chart auto-provisions the Prometheus datasource.
+  # Disables persistent storage for dashboard definitions.
   persistence:
     enabled: false
 
-  # Exposes the Grafana UI on the host machine.
+  # Exposes the Grafana UI service.
   service:
-    # Use 'NodePort' to make the service reachable.
     type: NodePort
-    # Internal cluster port.
     port: 3000
-    # The static port on the node, mapped to localhost:3000 in kind-config.yaml.
     nodePort: 30000
 
-  # Sets the default admin password for the Grafana UI.
-  # HACK: Hardcoded password for local demo only.
-  # DO NOT DO THIS IN A REAL/PRODUCTION ENVIRONMENT.
+  # Sets the default admin password.
+  # HACK: Hardcoded for local use; this should be a Kubernetes Secret in production.
   adminPassword: "admin"
 
-  # This declaratively creates Grafana data sources at startup.
+  # Declaratively creates data sources that load automatically on startup.
   additionalDataSources:
     # --- LOKI DATA SOURCE ---
     - name: Loki
       type: loki
-      # K8s internal DNS name for the Loki service
-      url: http://loki-gateway.logging.svc.cluster.local:3100
-      access: proxy  # 'proxy' means Grafana's server queries the source
+      # Targets the main Loki service endpoint.
+      url: http://loki.logging.svc.cluster.local:3100
+      access: proxy
       isDefault: false
 
     # --- TEMPO DATA SOURCE ---
     - name: Tempo
       type: tempo
-      # K8s internal DNS name for the Tempo service
+      # Targets the main Tempo service endpoint.
       url: http://tempo.tracing.svc.cluster.local:3100
       access: proxy
       isDefault: false

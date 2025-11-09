@@ -1,5 +1,9 @@
 ---
+# The Kubernetes API version required for this chart.
 apiVersion: v2
+# The name of this custom chart.
 name: app-chart
+# A brief description of what this chart does.
 description: A generic chart for deploying a simple microservice
+# The semantic version of this chart (not the app).
 version: 0.1.0

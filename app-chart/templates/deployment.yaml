@@ -2,26 +2,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  # Sets the Deployment's name using the 'app-chart.fullname' helper.
   name: {{include "app-chart.fullname" .}}
+  # Applies a standard label to the Deployment.
   labels:
     app: {{include "app-chart.fullname" .}}
 spec:
+  # Defines that only one pod replica should be running.
   replicas: 1
+  # Connects the Deployment to its pods using this label.
   selector:
     matchLabels:
       app: {{include "app-chart.fullname" .}}
+  # This template defines the pods that will be created.
   template:
     metadata:
+      # Applies the standard label to the pods for the selector to find.
       labels:
         app: {{include "app-chart.fullname" .}}
     spec:
       containers:
+        # Defines the main container running in the pod.
         - name: {{.Values.appName}}
+          # Sets the container image from the values file (e.g., "api-gateway:latest").
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          # Uses the local image loaded into 'kind' ('Never' = do not pull from a registry).
           imagePullPolicy: {{.Values.image.pullPolicy}}
+          # Exposes the container's port (e.g., 8000 for the api-gateway).
           ports:
             - name: http
               containerPort: {{.Values.containerPort}}
               protocol: TCP
+          # Injects environment variables defined in the values file.
           env:
             {{ .Values.env | toYaml | nindent 12 }}

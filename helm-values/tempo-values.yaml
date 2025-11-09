@@ -1,24 +1,24 @@
 ---
 # --- Helm Chart Settings (Chart deployment logic) ---
 
-# Deploys Tempo as a single "monolithic" process; simplest model for local testing.
+# Enables the monolithic deployment mode, which runs all Tempo components in one pod.
 monolithic:
   enabled: true
-  # Runs a single pod for the Tempo instance.
+  # Defines a single replica for this simplified, local instance.
   replicas: 1
   persistence:
-    # Disables PersistentVolumeClaims (PVCs); data is lost on pod restart (ephemeral).
+    # Disables persistent storage, making trace data ephemeral.
     enabled: false
 
 # --- Tempo Application Config (Passed into the Tempo process) ---
 
-# Enables the 'search' feature, which is required for finding traces.
+# Enables the trace search endpoint.
 search:
   enabled: true
 
 # --- Explicitly Disable Other Components ---
-# Since we set monolithic.enabled=true, we must explicitly disable the
-# individual microservice components to pass the chart's validation logic.
+# These microservices are part of the distributed mode. They must be explicitly
+# disabled to avoid configuration conflicts when 'monolithic: enabled' is true.
 distributor:
   enabled: false
 ingester:

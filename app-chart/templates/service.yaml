@@ -2,15 +2,20 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{include "app-chart.fullname" .}}
+  # Sets the Service name using the shared helper template.
+  name: {{ include "app-chart.fullname" . }}
+  # Applies standard labels for organization and querying.
   labels:
     app: {{include "app-chart.fullname" .}}
 spec:
+  # Defines the type of Service (e.g., ClusterIP for internal, NodePort for external).
   type: {{.Values.service.type}}
   ports:
+    # Maps the incoming service port to the container's 'http' port.
     - port: {{.Values.service.port}}
       targetPort: http
       protocol: TCP
       name: http
+  # Routes traffic to pods that match this label.
   selector:
     app: {{include "app-chart.fullname" .}}

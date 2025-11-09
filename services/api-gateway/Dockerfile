@@ -1,18 +1,19 @@
-# Use an official Python runtime as a parent image
+# Specifies the lightweight Python 3.11 base image.
 FROM python:3.11-slim
 
-# Set the working directory inside the container
+# Sets the working directory inside the container to /app.
 WORKDIR /app
 
-# Copy the requirements file and install dependencies
+# Copies the dependency file and installs packages.
+# Done before copying app code to leverage Docker layer caching.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the main application code
+# Copies the main application source code into the container.
 COPY main.py .
 
-# Expose the port the app runs on
+# Documents that the container listens on port 8000.
 EXPOSE 8000
 
-# Command to run the application using uvicorn
+# Defines the command to start the application server (Uvicorn).
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
