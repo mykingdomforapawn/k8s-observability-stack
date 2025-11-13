@@ -172,7 +172,7 @@ Once `helmfile sync` is complete, you can access the UIs:
 
 ---
 
-## ⏹️ How to Tear Down
+## How to Tear Down
 
 You can destroy the entire setup with two commands:
 
@@ -189,7 +189,7 @@ You can destroy the entire setup with two commands:
 
 ---
 
-## ✅ Project Roadmap (Completed)
+## Project Roadmap
 
 * [x] **Step 1: Cluster Setup**
     * Configured a reproducible `kind` cluster.
