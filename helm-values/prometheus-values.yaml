@@ -23,21 +23,21 @@ alertmanager:
 
 # --- Prometheus Server Settings ---
 prometheus:
+  # Exposes the Prometheus UI service.
+  service:
+    # Makes the service reachable via NodePort mapping in kind-config.yaml.
+    type: NodePort
+    # Internal cluster port.
+    port: 9090
+    # Static port on the node exposed to the host machine.
+    nodePort: 30090
+
   prometheusSpec:
     # Uses temporary storage for all metric data.
     storageSpec:
       emptyDir: {}
     # Enables the receiver for Remote Write, allowing the OTel Collector to push metrics.
     enableRemoteWriteReceiver: true
-
-    # Exposes the Prometheus UI service.
-    service:
-      # Makes the service reachable via NodePort mapping in kind-config.yaml.
-      type: NodePort
-      # Internal cluster port.
-      port: 9090
-      # Static port on the node exposed to the host machine.
-      nodePort: 30090
 
     # Disables the optional component for long-term storage/querying.
     thanosRuler:
